@@ -28,6 +28,42 @@ import (
 // also created.  If a node is deleted from the system, then cleanup is to be
 // done in ETCD.
 
+func (s *Plugin) findInterfaceInNode(nodeName string, ifName string) (*controller.Interface, string) {
+
+	n, exists := s.ramConfigCache.Nodes[nodeName]
+	if !exists {
+		return nil, ""
+	}
+	for _, iFace := range n.Interfaces {
+		if iFace.Name == ifName {
+			return iFace, iFace.IfType
+		}
+	}
+
+	return nil, ""
+}
+
+//func (s *Plugin) findInterfacesForThisLabelInNode(nodeName string, label string) ([]*controller.Interface, []string) {
+//
+//	var interfaces []*controller.Interface
+//	var ifTypes []string
+//
+//	n, exists := s.ramConfigCache.Nodes[nodeName]
+//	if !exists {
+//		return interfaces, ifTypes
+//	}
+//	for _, iFace := range n.Interfaces {
+//		for _, ifaceLabel := range iFace.CustomLabels{
+//			if ifaceLabel == label {
+//				interfaces = append(interfaces, iFace)
+//				ifTypes = append(ifTypes, iFace.IfType)
+//			}
+//		}
+//	}
+//
+//	return interfaces, ifTypes
+//}
+
 // nodeValidateInterfaces validates all the fields
 func (s *Plugin) nodeValidateInterfaces(nodeName string, iFaces []*controller.Interface) error {
 

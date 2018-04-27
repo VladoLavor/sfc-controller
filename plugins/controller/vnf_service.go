@@ -83,10 +83,28 @@ func (s *Plugin) vnfServiceValidateConnections(vsName string,
 		}
 
 		for _, connInterface := range conn.Interfaces {
-			if iface, _ := s.findVnfAndInterfaceInVnfList(connInterface.Vnf,
-				connInterface.Interface, vnfs); iface == nil {
-				return fmt.Errorf("vnf-service: %s conn: vnf/port: %s/%s not found in vnf interfaces",
-					vsName, connInterface.Vnf, connInterface.Interface)
+
+			if connInterface.Vnf == "" && connInterface.Node == "" {
+				return fmt.Errorf("vnf-service: %s conn: vnf/node: %s/%s one must be set in vnf interfaces",
+					vsName, connInterface.Vnf, connInterface.Node)
+			}
+			if connInterface.Vnf != "" && connInterface.Node != "" {
+				return fmt.Errorf("vnf-service: %s conn: vnf/node: %s/%s cannot both be set in vnf interfaces",
+					vsName, connInterface.Vnf, connInterface.Node)
+			}
+			if connInterface.Vnf != "" {
+				if iface, _ := s.findVnfAndInterfaceInVnfList(connInterface.Vnf,
+					connInterface.Interface, vnfs); iface == nil {
+					return fmt.Errorf("vnf-service: %s conn: vnf/port: %s/%s not found in vnf interfaces",
+						vsName, connInterface.Vnf, connInterface.Interface)
+				}
+			}
+			if connInterface.Node != "" {
+				if iFace, _ := s.findInterfaceInNode(connInterface.Node,
+					connInterface.Interface); iFace == nil {
+					return fmt.Errorf("vnf-service: %s conn: node/port: %s/%s not found in node's interfaces",
+						vsName, connInterface.Node, connInterface.Interface)
+				}
 			}
 		}
 	}

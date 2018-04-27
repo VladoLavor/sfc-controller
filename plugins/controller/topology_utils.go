@@ -29,8 +29,8 @@ func (s *Plugin) RenderToplogyInterfacePair(vs *controller.VNFService,
 	vnfType string,
 	vsState *controller.VNFServiceState) (string, error) {
 
-	// The interface should be created in the vnf and the vswitch then the vsitch
-	// interfaces will be added to the bridge.
+	// The interface should be created in the vnf and the vswitch then the vswitch
+	// interfaces will be added to the bridge or used in a l2 xconn
 
 	switch vnfInterface.IfType {
 	case controller.IfTypeMemif:
@@ -39,6 +39,8 @@ func (s *Plugin) RenderToplogyInterfacePair(vs *controller.VNFService,
 		return s.RenderToplogyVethAfpPair(vs, vppAgent, connInterface, vnfInterface, vnfType, vsState)
 	case controller.IfTypeTap:
 		return s.RenderToplogyTapPair(vs, vppAgent, connInterface, vnfInterface, vnfType, vsState)
+	case controller.IfTypeEthernet:
+		return vnfInterface.Name, nil
 	}
 
 	return "", nil

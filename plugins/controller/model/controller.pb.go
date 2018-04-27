@@ -221,6 +221,8 @@ type Connection struct {
 	UseNodeL2Bd    string                  `protobuf:"bytes,4,opt,name=use_node_l2bd,proto3" json:"use_node_l2bd,omitempty"`
 	// only for l2mp connections
 	L2Bd *L2BD `protobuf:"bytes,5,opt,name=l2bd" json:"l2bd,omitempty"`
+	// create a l2bd with default parms for l2mp connections
+	NodeInterfaceLabels []string `protobuf:"bytes,6,rep,name=node_interface_labels" json:"node_interface_labels,omitempty"`
 }
 
 func (m *Connection) Reset()         { *m = Connection{} }
@@ -244,6 +246,7 @@ func (m *Connection) GetL2Bd() *L2BD {
 type Connection_Interface struct {
 	Vnf       string `protobuf:"bytes,1,opt,name=vnf,proto3" json:"vnf,omitempty"`
 	Interface string `protobuf:"bytes,2,opt,name=interface,proto3" json:"interface,omitempty"`
+	Node      string `protobuf:"bytes,3,opt,name=node,proto3" json:"node,omitempty"`
 }
 
 func (m *Connection_Interface) Reset()         { *m = Connection_Interface{} }

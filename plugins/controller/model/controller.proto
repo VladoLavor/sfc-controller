@@ -119,12 +119,14 @@ message Connection {
     message Interface {
         string vnf = 1;
         string interface = 2;
+        string node = 3; // special case for connecting to physical port on nic
     }
     repeated Interface interfaces = 3;
     string use_node_l2bd = 4; // optional: use an existing node level l2bd
                               // only for l2mp connections
     L2BD l2bd = 5; // optional: if ommitted and use_node_l2bd is not set then
                    // create a l2bd with default parms for l2mp connections
+    repeated string node_interface_labels = 6;
 }
 
 message Node {

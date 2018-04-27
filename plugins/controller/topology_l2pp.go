@@ -33,34 +33,47 @@ func (s *Plugin) RenderTopologyL2PP(vs *controller.VNFService,
 	vnfTypes := make([]string, 2)
 
 	allVnfsAssignedToNodes := true
+	staticNodesInInterfacesSpecified := false
 
 	log.Debugf("RenderTopologyL2PP: num interfaces: %d", len(conn.Interfaces))
 
 	// let see if all interfaces in the conn are associated with a node
 	for i, connInterface := range conn.Interfaces {
 
-		v, exists := s.ramConfigCache.VNFToNodeStateMap[connInterface.Vnf]
-		if !exists || v.Node == "" {
-			msg := fmt.Sprintf("connection segment: %s/%s, vnf not mapped to a node in vnf_to_node_map",
-				connInterface.Vnf, connInterface.Interface)
-			s.AppendStatusMsgToVnfService(msg, vsState)
-			allVnfsAssignedToNodes = false
-			continue
-		}
-		_, exists = s.ramConfigCache.Nodes[v.Node]
-		if !exists {
-			msg := fmt.Sprintf("connection segment: %s/%s, vnf references non existant host: %s",
-				connInterface.Vnf, connInterface.Interface, v.Node)
-			s.AppendStatusMsgToVnfService(msg, vsState)
-			allVnfsAssignedToNodes = false
-			continue
+		if connInterface.Vnf != "" {
+			v, exists := s.ramConfigCache.VNFToNodeStateMap[connInterface.Vnf]
+			if !exists || v.Node == "" {
+				msg := fmt.Sprintf("connection segment: %s/%s, vnf not mapped to a node in vnf_to_node_map",
+					connInterface.Vnf, connInterface.Interface)
+				s.AppendStatusMsgToVnfService(msg, vsState)
+				allVnfsAssignedToNodes = false
+				continue
+			}
+			_, exists = s.ramConfigCache.Nodes[v.Node]
+			if !exists {
+				msg := fmt.Sprintf("connection segment: %s/%s, vnf references non existant host: %s",
+					connInterface.Vnf, connInterface.Interface, v.Node)
+				s.AppendStatusMsgToVnfService(msg, vsState)
+				allVnfsAssignedToNodes = false
+				continue
+			}
+
+			v2n[i] = v
+			vnfInterface, vnfType := s.findVnfAndInterfaceInVnfList(connInterface.Vnf,
+				connInterface.Interface, vnfs)
+			vnfInterfaces[i] = vnfInterface
+			vnfTypes[i] = vnfType
 		}
 
-		v2n[i] = v
-		vnfInterface, vnfType := s.findVnfAndInterfaceInVnfList(connInterface.Vnf,
-			connInterface.Interface, vnfs)
-		vnfInterfaces[i] = vnfInterface
-		vnfTypes[i] = vnfType
+		if connInterface.Node != "" {
+			vnfInterface, vnfType := s.findInterfaceInNode(connInterface.Node,
+				connInterface.Interface)
+			vnfInterfaces[i] = vnfInterface
+			vnfTypes[i] = vnfType
+			v2n[i].Node = connInterface.Node
+			v2n[i].Vnf = connInterface.Node
+			staticNodesInInterfacesSpecified = true
+		}
 	}
 
 	if !allVnfsAssignedToNodes {
@@ -73,6 +86,13 @@ func (s *Plugin) RenderTopologyL2PP(vs *controller.VNFService,
 	if v2n[0].Node == v2n[1].Node {
 		return s.renderToplogySegmentL2PPSameNode(vs, v2n[0].Node, conn, connIndex,
 			vnfInterfaces, vnfTypes, vsState)
+	} else if staticNodesInInterfacesSpecified {
+		msg := fmt.Sprintf("vnf-service: %s, vnf/node %s/%s must be the same",
+			vs.Name,
+			v2n[0].Node,
+			v2n[1].Node)
+		s.AppendStatusMsgToVnfService(msg, vsState)
+		return fmt.Errorf(msg)
 	}
 
 	// not on same node so ensure there is an VNFServiceMesh sepcified

@@ -37,6 +37,8 @@ func (s *Plugin) RenderTopologyL2MP(vs *controller.VNFService,
 	vnfTypes := make([]string, 0)
 
 	allVnfsAssignedToNodes := true
+	staticNodesInInterfacesSpecified := false
+
 	var nodeMap = make(map[string]bool, 0) // determine the set of nodes
 
 	log.Debugf("RenderTopologyL2MP: num interfaces: %d", numIFs)
@@ -44,33 +46,47 @@ func (s *Plugin) RenderTopologyL2MP(vs *controller.VNFService,
 	// let's see if all interfaces in the conn are associated with a node
 	for _, connInterface := range conn.Interfaces {
 
-		v, exists := s.ramConfigCache.VNFToNodeStateMap[connInterface.Vnf]
-		if !exists || v.Node == "" {
-			msg := fmt.Sprintf("connection segment: %s/%s, vnf not mapped to a node in vnf_to_node_map",
-				connInterface.Vnf, connInterface.Interface)
-			s.AppendStatusMsgToVnfService(msg, vsState)
-			allVnfsAssignedToNodes = false
-			continue
+		if connInterface.Vnf != "" {
+			v, exists := s.ramConfigCache.VNFToNodeStateMap[connInterface.Vnf]
+			if !exists || v.Node == "" {
+				msg := fmt.Sprintf("connection segment: %s/%s, vnf not mapped to a node in vnf_to_node_map",
+					connInterface.Vnf, connInterface.Interface)
+				s.AppendStatusMsgToVnfService(msg, vsState)
+				allVnfsAssignedToNodes = false
+				continue
+			}
+
+			_, exists = s.ramConfigCache.Nodes[v.Node]
+			if !exists {
+				msg := fmt.Sprintf("connection segment: %s/%s, vnf references non existant host: %s",
+					connInterface.Vnf, connInterface.Interface, v.Node)
+				s.AppendStatusMsgToVnfService(msg, vsState)
+				allVnfsAssignedToNodes = false
+				continue
+			}
+
+			nodeMap[v.Node] = true // maintain a map of which nodes are in the conn set
+
+			// based on the interfaces in the conn, order the interface info accordingly as the set of
+			// interfaces in the vnf/interface stanza can be in a different order
+			v2n = append(v2n, v)
+			vnfInterface, vnfType := s.findVnfAndInterfaceInVnfList(connInterface.Vnf,
+				connInterface.Interface, vnfs)
+			vnfInterfaces = append(vnfInterfaces, vnfInterface)
+			vnfTypes = append(vnfTypes, vnfType)
 		}
 
-		_, exists = s.ramConfigCache.Nodes[v.Node]
-		if !exists {
-			msg := fmt.Sprintf("connection segment: %s/%s, vnf references non existant host: %s",
-				connInterface.Vnf, connInterface.Interface, v.Node)
-			s.AppendStatusMsgToVnfService(msg, vsState)
-			allVnfsAssignedToNodes = false
-			continue
+		if connInterface.Node != "" {
+			vnfInterface, vnfType := s.findInterfaceInNode(connInterface.Node,
+				connInterface.Interface)
+			var v controller.VNFToNodeMap
+			v.Node = connInterface.Node
+			v.Vnf = connInterface.Node
+			v2n = append(v2n, v)
+			vnfInterfaces = append(vnfInterfaces, vnfInterface)
+			vnfTypes = append(vnfTypes, vnfType)
+			staticNodesInInterfacesSpecified = true
 		}
-
-		nodeMap[v.Node] = true // maintain a map of which nodes are in the conn set
-
-		// based on the interfaces in the conn, order the interface info accordingly as the set of
-		// interfaces in the vnf/interface stanza can be in a different order
-		v2n = append(v2n, v)
-		vnfInterface, vnfType := s.findVnfAndInterfaceInVnfList(connInterface.Vnf,
-			connInterface.Interface, vnfs)
-		vnfInterfaces = append(vnfInterfaces, vnfInterface)
-		vnfTypes = append(vnfTypes, vnfType)
 	}
 
 	if !allVnfsAssignedToNodes {
@@ -98,6 +114,14 @@ func (s *Plugin) RenderTopologyL2MP(vs *controller.VNFService,
 	if len(nodeMap) == 1 {
 		return s.renderToplogySegmentL2MPSameNode(vs, conn, connIndex, vnfInterfaces,
 			&vnfServiceMesh, v2n, vnfTypes, vsState)
+	} else {
+		if staticNodesInInterfacesSpecified {
+			msg := fmt.Sprintf("vnf-service: %s, all vnfs/nodes must match: %s",
+				vs.Name,
+				v2n[0].Node)
+			s.AppendStatusMsgToVnfService(msg, vsState)
+			return fmt.Errorf(msg)
+		}
 	}
 
 	// now setup the connection between nodes
