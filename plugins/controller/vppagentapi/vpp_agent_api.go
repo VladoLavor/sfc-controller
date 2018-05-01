@@ -444,8 +444,8 @@ func ConstructVEthInterface(vppAgent string,
 		Mtu:         mtu,
 		HostIfName:  hostIfName,
 		Namespace: &linuxIntf.LinuxInterfaces_Interface_Namespace{
-			Type:         linuxIntf.LinuxInterfaces_Interface_Namespace_MICROSERVICE_REF_NS,
-			Microservice: vnfName,
+			Type: linuxIntf.LinuxInterfaces_Interface_Namespace_NAMED_NS,
+			Name: vnfName,
 		},
 		Veth: &linuxIntf.LinuxInterfaces_Interface_Veth{
 			PeerIfName: peerIfName,
