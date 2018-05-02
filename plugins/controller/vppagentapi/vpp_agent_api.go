@@ -28,7 +28,7 @@ import (
 	"github.com/ligato/vpp-agent/plugins/defaultplugins/common/model/interfaces"
 	"github.com/ligato/vpp-agent/plugins/defaultplugins/common/model/l2"
 	"github.com/ligato/vpp-agent/plugins/defaultplugins/common/model/l3"
-	linuxIntf "github.com/ligato/vpp-agent/plugins/linuxplugin/ifplugin/model/interfaces"
+	linuxIntf "github.com/ligato/vpp-agent/plugins/linuxplugin/common/model/interfaces"
 )
 
 var (
@@ -444,8 +444,8 @@ func ConstructVEthInterface(vppAgent string,
 		Mtu:         mtu,
 		HostIfName:  hostIfName,
 		Namespace: &linuxIntf.LinuxInterfaces_Interface_Namespace{
-			Type: linuxIntf.LinuxInterfaces_Interface_Namespace_NAMED_NS,
-			Name: vnfName,
+			Type: linuxIntf.LinuxInterfaces_Interface_Namespace_MICROSERVICE_REF_NS,
+			Microservice: vnfName,
 		},
 		Veth: &linuxIntf.LinuxInterfaces_Interface_Veth{
 			PeerIfName: peerIfName,
