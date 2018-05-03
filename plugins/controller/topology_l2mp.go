@@ -90,7 +90,11 @@ func (s *Plugin) RenderTopologyL2MP(vs *controller.VNFService,
 	}
 
 	if !allVnfsAssignedToNodes {
-		return fmt.Errorf("Not all vnfs in this connection are mapped to nodes")
+		msg := fmt.Sprintf("vnf-service: %s, conn: %d, Not all vnfs in this connection are mapped to nodes",
+			vs.Name,
+			connIndex)
+		s.AppendStatusMsgToVnfService(msg, vsState)
+		return fmt.Errorf(msg)
 	}
 
 	log.Debugf("RenderTopologyL2MP: num unique nodes for this connection: %d", len(nodeMap))
@@ -107,6 +111,38 @@ func (s *Plugin) RenderTopologyL2MP(vs *controller.VNFService,
 				connIndex)
 			s.AppendStatusMsgToVnfService(msg, vsState)
 			return fmt.Errorf(msg)
+		}
+	}
+
+	if conn.NodeInterfaceLabels != nil {
+		if len(nodeMap) != 1 {
+			msg := fmt.Sprintf("vnf-service: %s, all vnfs must be on smae node to connect to node interface label",
+				vs.Name)
+			s.AppendStatusMsgToVnfService(msg, vsState)
+			return fmt.Errorf(msg)
+		}
+		nodeInterfaces, nodeIfTypes := s.findInterfacesForThisLabelInNode(v2n[0].Node, conn.NodeInterfaceLabels)
+		if len(nodeInterfaces) == 0 {
+			msg := fmt.Sprintf("vnf-service: %s, nodeLabels %v: must match at least 1 node interface: incorrect config",
+				vs.Name, conn.NodeInterfaceLabels)
+			s.AppendStatusMsgToVnfService(msg, vsState)
+			return fmt.Errorf(msg)
+		}
+
+		for _, nodeInterface := range nodeInterfaces {
+			connInterface := &controller.Connection_Interface{
+				Node: conn.Interfaces[0].Node,
+				Interface: nodeInterface.Name,
+			}
+			conn.Interfaces = append(conn.Interfaces, connInterface)
+			var v controller.VNFToNodeMap
+			v.Node = connInterface.Node
+			v.Vnf = connInterface.Node
+			v2n = append(v2n, v)
+			vnfInterfaces = append(vnfInterfaces, nodeInterface)
+		}
+		for _, nodeIfType := range nodeIfTypes {
+			vnfTypes = append(vnfTypes, nodeIfType)
 		}
 	}
 

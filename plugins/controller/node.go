@@ -43,26 +43,28 @@ func (s *Plugin) findInterfaceInNode(nodeName string, ifName string) (*controlle
 	return nil, ""
 }
 
-//func (s *Plugin) findInterfacesForThisLabelInNode(nodeName string, label string) ([]*controller.Interface, []string) {
-//
-//	var interfaces []*controller.Interface
-//	var ifTypes []string
-//
-//	n, exists := s.ramConfigCache.Nodes[nodeName]
-//	if !exists {
-//		return interfaces, ifTypes
-//	}
-//	for _, iFace := range n.Interfaces {
-//		for _, ifaceLabel := range iFace.CustomLabels{
-//			if ifaceLabel == label {
-//				interfaces = append(interfaces, iFace)
-//				ifTypes = append(ifTypes, iFace.IfType)
-//			}
-//		}
-//	}
-//
-//	return interfaces, ifTypes
-//}
+func (s *Plugin) findInterfacesForThisLabelInNode(nodeName string, labels []string) ([]*controller.Interface, []string) {
+
+	var interfaces []*controller.Interface
+	var ifTypes []string
+
+	n, exists := s.ramConfigCache.Nodes[nodeName]
+	if !exists {
+		return interfaces, ifTypes
+	}
+	for _, iFace := range n.Interfaces {
+		for _, ifaceLabel := range iFace.CustomLabels{
+			for _, label := range labels {
+				if ifaceLabel == label {
+					interfaces = append(interfaces, iFace)
+					ifTypes = append(ifTypes, iFace.IfType)
+				}
+			}
+		}
+	}
+
+	return interfaces, ifTypes
+}
 
 // nodeValidateInterfaces validates all the fields
 func (s *Plugin) nodeValidateInterfaces(nodeName string, iFaces []*controller.Interface) error {
@@ -220,7 +222,7 @@ func (s *Plugin) RenderNodeInterfaces(n *controller.Node,
 	for _, iFace := range iFaces {
 		switch iFace.IfType {
 		case controller.IfTypeEthernet:
-			if !ContivKSREnabled { // do not configure the phys if as contiv already did this
+			if ! iFace.RenderingNotRequired {
 				vppKV = vppagentapi.ConstructEthernetInterface(
 					vppAgent,
 					iFace.Name,

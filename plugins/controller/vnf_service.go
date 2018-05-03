@@ -50,8 +50,10 @@ func (s *Plugin) vnfServiceValidateConnections(vsName string,
 		switch conn.ConnType {
 		case controller.ConnTypeL2PP:
 			if len(conn.Interfaces) != 2 {
-				return fmt.Errorf("vnf-service: %s conn: p2p must have 2 interfaces only",
-					vsName)
+				if len(conn.NodeInterfaceLabels) == 0 {
+					return fmt.Errorf("vnf-service: %s conn: p2p must have 2 interfaces only",
+						vsName)
+				}
 			}
 		case controller.ConnTypeL2MP:
 			if len(conn.Interfaces) == 0 {

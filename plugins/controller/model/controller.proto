@@ -104,6 +104,7 @@ message Interface {
         string inter_vnf_conn = 2; //direct|vswitch optional/default: direct
     }
     MemIFParms memif_parms = 11;
+    bool rendering_not_required = 12; // optional: if missing, render will occur
 }
 
 message VNF {

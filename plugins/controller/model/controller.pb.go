@@ -159,14 +159,15 @@ type Interface struct {
 	IfType     string `protobuf:"bytes,2,opt,name=if_type,proto3" json:"if_type,omitempty"`
 	MacAddress string `protobuf:"bytes,3,opt,name=mac_address,proto3" json:"mac_address,omitempty"`
 	// 02:00:00:00:00:00 as base, last octet increments
-	Mtu          uint32                `protobuf:"varint,4,opt,name=mtu,proto3" json:"mtu,omitempty"`
-	RxMode       string                `protobuf:"bytes,5,opt,name=rx_mode,proto3" json:"rx_mode,omitempty"`
-	IpAddresses  []string              `protobuf:"bytes,6,rep,name=ip_addresses" json:"ip_addresses,omitempty"`
-	VrfId        uint32                `protobuf:"varint,7,opt,name=vrf_id,proto3" json:"vrf_id,omitempty"`
-	IpamPoolName string                `protobuf:"bytes,8,opt,name=ipam_pool_name,proto3" json:"ipam_pool_name,omitempty"`
-	AdminStatus  string                `protobuf:"bytes,9,opt,name=admin_status,proto3" json:"admin_status,omitempty"`
-	CustomLabels []string              `protobuf:"bytes,10,rep,name=custom_labels" json:"custom_labels,omitempty"`
-	MemifParms   *Interface_MemIFParms `protobuf:"bytes,11,opt,name=memif_parms" json:"memif_parms,omitempty"`
+	Mtu                  uint32                `protobuf:"varint,4,opt,name=mtu,proto3" json:"mtu,omitempty"`
+	RxMode               string                `protobuf:"bytes,5,opt,name=rx_mode,proto3" json:"rx_mode,omitempty"`
+	IpAddresses          []string              `protobuf:"bytes,6,rep,name=ip_addresses" json:"ip_addresses,omitempty"`
+	VrfId                uint32                `protobuf:"varint,7,opt,name=vrf_id,proto3" json:"vrf_id,omitempty"`
+	IpamPoolName         string                `protobuf:"bytes,8,opt,name=ipam_pool_name,proto3" json:"ipam_pool_name,omitempty"`
+	AdminStatus          string                `protobuf:"bytes,9,opt,name=admin_status,proto3" json:"admin_status,omitempty"`
+	CustomLabels         []string              `protobuf:"bytes,10,rep,name=custom_labels" json:"custom_labels,omitempty"`
+	MemifParms           *Interface_MemIFParms `protobuf:"bytes,11,opt,name=memif_parms" json:"memif_parms,omitempty"`
+	RenderingNotRequired bool                  `protobuf:"varint,12,opt,name=rendering_not_required,proto3" json:"rendering_not_required,omitempty"`
 }
 
 func (m *Interface) Reset()         { *m = Interface{} }

@@ -37,6 +37,8 @@ func (s *Plugin) RenderTopologyL2PP(vs *controller.VNFService,
 
 	log.Debugf("RenderTopologyL2PP: num interfaces: %d", len(conn.Interfaces))
 
+	numInterfacesInConn := len(conn.Interfaces)
+
 	// let see if all interfaces in the conn are associated with a node
 	for i, connInterface := range conn.Interfaces {
 
@@ -77,7 +79,35 @@ func (s *Plugin) RenderTopologyL2PP(vs *controller.VNFService,
 	}
 
 	if !allVnfsAssignedToNodes {
-		return fmt.Errorf("Not all vnfs in this connection are mapped to nodes")
+		msg := fmt.Sprintf("vnf-service: %s, Not all vnfs in this connection are mapped to nodes",
+			vs.Name)
+		s.AppendStatusMsgToVnfService(msg, vsState)
+		return fmt.Errorf(msg)
+	}
+
+	if conn.NodeInterfaceLabels != nil {
+	    if numInterfacesInConn != 1 || len(conn.NodeInterfaceLabels) != 1 {
+			msg := fmt.Sprintf("vnf-service: %s, need 1 interface in conn and  1 nodeInterface label: incorrect config",
+				vs.Name)
+			s.AppendStatusMsgToVnfService(msg, vsState)
+			return fmt.Errorf(msg)
+		}
+		nodeInterfaces, nodeIfTypes := s.findInterfacesForThisLabelInNode(v2n[0].Node, conn.NodeInterfaceLabels)
+		if len(nodeInterfaces) != 1 {
+			msg := fmt.Sprintf("vnf-service: %s, nodeLabels %v: must match only 1 node interface: incorrect config",
+				vs.Name, conn.NodeInterfaceLabels)
+			s.AppendStatusMsgToVnfService(msg, vsState)
+			return fmt.Errorf(msg)
+		}
+		connInterface := &controller.Connection_Interface{
+			Node: v2n[0].Node,
+			Interface: nodeInterfaces[0].Name,
+		}
+		conn.Interfaces = append(conn.Interfaces, connInterface)
+		vnfInterfaces[1] = nodeInterfaces[0]
+		vnfTypes[1] = nodeIfTypes[0]
+		v2n[1].Node = v2n[0].Node
+		v2n[1].Vnf = v2n[0].Node
 	}
 
 	log.Debugf("RenderTopologyL2PP: v2n=%v, vnfI=%v, conn=%v", v2n, vnfInterfaces, conn)
@@ -95,7 +125,7 @@ func (s *Plugin) RenderTopologyL2PP(vs *controller.VNFService,
 		return fmt.Errorf(msg)
 	}
 
-	// not on same node so ensure there is an VNFServiceMesh sepcified
+	// not on same node so ensure there is an VNFServiceMesh specified
 	if conn.VnfServiceMesh == "" {
 		msg := fmt.Sprintf("vnf-service: %s, %s/%s to %s/%s no node service mesh specified",
 			vs.Name,
